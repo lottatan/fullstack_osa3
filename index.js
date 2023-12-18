@@ -4,6 +4,7 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 const Person = require('./models/person')
+const { MongoNotConnectedError } = require('mongodb')
 
 const unknownEndpoint = (req, res) => {
     res.status(404).send({ error: 'unknown endpoint' })}
@@ -48,25 +49,29 @@ const generateId = () => {
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')})
   
-app.get('/api/persons', (req, res) => {
-    Person.find({}).then(persons => {
-        res.json(persons)
-    })})
+app.get('/api/persons', (req, res, next) => {
+    Person.find({})
+    .then(persons => {
+        res.json(persons)})
+    .catch(error => next(error))})
 
-app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
+app.get('/api/persons/:id', (req, res, next) => {
+    Person.findById(req.params.id)
+    .then(person => {
         if (person){
             res.json(person)}
         else {
-        res.status(404).send('Person not found')}
-    })})
+        res.status(404).send('Person not found')}})
+    .catch(error => next(error))})
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-    res.status(204).end()})
+    Person.findByIdAndDelete(req.params.id)
+    .then(()=> {
+        res.status(204).end()})
+    .catch(error => next(error))
+    })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body
 
     if (!body.name) {
@@ -82,9 +87,11 @@ app.post('/api/persons', (req, res) => {
         number: body.number
     })
 
-    person.save().then(savedPerson => {
-        res.json(savedPerson)
-    })})
+    person.save()
+    .then(savedPerson => {
+        res.json(savedPerson)})
+    .catch(error => next(error))
+    })
       
 
 app.get('/info', (req, res) => {
