@@ -114,10 +114,14 @@ app.post('/api/persons', (req, res, next) => {
     })
       
 
-app.get('/info', (req, res) => {
-    res.send(
-    `<p>Phonebook has info for ${persons.length} people</p>
-    <p>${new Date().toLocaleString()}</p>`)})
+app.get('/info', (req, res, next) => {
+    Person.find({})
+    .then(persons => {
+        res.send(
+            `<p>Phonebook has info for ${persons.length} people</p>
+            <p>${new Date().toLocaleString()}</p>`)})
+    .catch(error => next(error))
+    })
 
 app.use(unknownEndpoint)
 app.use(errorHandler)
