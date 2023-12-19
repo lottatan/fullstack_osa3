@@ -4,10 +4,17 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 const Person = require('./models/person')
-const { MongoNotConnectedError } = require('mongodb')
+
 
 const unknownEndpoint = (req, res) => {
     res.status(404).send({ error: 'unknown endpoint' })}
+
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message)
+      
+    if (error.name === 'CastError') {
+        return res.status(400).send({ error: 'malformatted id' })}  
+    next(error)}
 
 let persons = [
     {
@@ -64,6 +71,19 @@ app.get('/api/persons/:id', (req, res, next) => {
         res.status(404).send('Person not found')}})
     .catch(error => next(error))})
 
+app.put('/api/persons/:id', (req, res, next) => {
+    const body = req.body
+
+    const person = {
+        name: body.name,
+        number: body.number}
+
+    Person.findByIdAndUpdate(req.params.id, person, {new: true})
+    .then(updatedNumber => {
+        res.json(updatedNumber)})
+    .catch(error => next(error))
+})
+
 app.delete('/api/persons/:id', (req, res) => {
     Person.findByIdAndDelete(req.params.id)
     .then(()=> {
@@ -100,6 +120,7 @@ app.get('/info', (req, res) => {
     <p>${new Date().toLocaleString()}</p>`)})
 
 app.use(unknownEndpoint)
+app.use(errorHandler)
   
 const PORT = process.env.PORT
 app.listen(PORT, () => {
